@@ -1,5 +1,13 @@
 from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from uuid import uuid4 as uuid
 from src.db.lib.managedb import ManageDb
+
+class ContactModel(BaseModel):
+    id : str = str(uuid())
+    name : str
+    phone : str
+
 
 app = FastAPI()
 md = ManageDb()
@@ -23,5 +31,12 @@ def get_single_contact(id_contact:str):
     raise HTTPException(status_code=404, detail="Contact not found")
 
 @app.post("/api/contacts")
-def add_contact(new_contact):
-    pass
+def add_contact(new_contact: ContactModel):
+    contacts = md.read_contacts()
+    new_contact = new_contact.dict()
+    contacts.append(new_contact)
+    md.write_contacts(contacts)
+    return {
+        "success" : True,
+        "message" : "Added new Contact"
+    }
