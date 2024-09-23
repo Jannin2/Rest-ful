@@ -1,7 +1,14 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from pydantic import BaseModel
 from uuid import uuid4 as uuid
-from src.db.lib.managedb import ManageDb
+
+from src.db.lib.router.get_contacts import get_contacts
+from src.db.lib.router.get_contact import get_contact
+from src.db.lib.router.post_contacts import post_contacts
+from src.db.lib.router.put_contacts import put_contacts
+from src.db.lib.router.delete_contact import delete_contact
+
+
 
 class ContactModel(BaseModel):
     id : str = str(uuid())
@@ -10,7 +17,7 @@ class ContactModel(BaseModel):
 
 
 app = FastAPI()
-md = ManageDb()
+
 
 @app.get("/")
 def root():
@@ -18,72 +25,22 @@ def root():
 
 @app.get("/api/contacts")
 def get_all_contacts():
-    return md.read_contacts()
+    return get_contacts()
 
 @app.get("/api/contacts/{id_contact}")
 def get_single_contact(id_contact:str):
-    contacts = md.read_contacts()
-    
-    for contact in contacts:
-        if contact["id"] == id_contact:
-            return contact
-        
-    raise HTTPException(status_code=404, detail="Contact not found")
+    return get_contact(id_contact)
 
 @app.post("/api/contacts")
 def add_contact(new_contact: ContactModel):
-    contacts = md.read_contacts()
-    new_contact = new_contact.dict()
-    contacts.append(new_contact)
-    md.write_contacts(contacts)
-    return {
-        "success" : True,
-        "message" : "Added new Contact"
-    }
+   return post_contacts(new_contact)
     
 @app.put("/api/contacts/{id_contact}")
 def update_contact(id_contact: str, new_contact: ContactModel):
-    contacts = md.read_contacts()
+    return put_contacts(id_contact, new_contact)
     
-    for index, contact in enumerate(contacts):
-        if str(contact["id"]) == id_contact:  
-            updated_contact = new_contact.dict()
-
-            
-            if new_contact.name == "":
-                updated_contact["name"] = contact["name"]
-                
-            if new_contact.phone == "":
-                updated_contact["phone"] = contact["phone"]
-
-           
-            contacts[index] = updated_contact
-            
-            
-            md.write_contacts(contacts)
-            
-            return {
-                "success": True,
-                "message": "Contact updated successfully"
-            }
-    
-    raise HTTPException(status_code=404, detail="Contact not found")
-
 @app.delete("/api/contacts/{id_contact}")
 def remove_contact(id_contact:str):
-    contacts = md.read_contacts()
-    
-    for index, contact in enumerate(contacts):
-        if contact["id"] == id_contact:
-            contacts.pop(index)
-            
-            md.write_contacts(contacts)
-            
-            return {
-                "succes" : True,
-                "message" : "Deleted contact"
-            }
-            
-    raise HTTPException(status_code= 404, detail= "contact not found")
+    return delete_contact(id_contact)
 
 
